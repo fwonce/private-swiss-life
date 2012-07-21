@@ -42,27 +42,23 @@ def parse2objects(i):
     for f in FILTER3: del jsonobj3[f]
     return [jsonobj1, jsonobj2, jsonobj3]
 
-obj1 = parse2objects(id1)
-obj2 = parse2objects(id2)
-
-for i in range(3):
-    print('diff in ', MARKER[i], 'fields:')
-    for key in iter(obj1[i]):
+def comp_dict(obj1, obj2, marker):
+    print('diff on ', marker, 'fields:')
+    for key in iter(obj1):
         if key == 'attributes':
             continue
         try:
-            val2 = obj2[i][key]
+            val2 = obj2[key]
         except KeyError:
             val2 = ''
-        if obj1[i][key] != val2:
-            print('\t', key, '=', obj1[i][key], '\n\t', key, '=', val2)
-
+        if obj1[key] != val2:
+            print('\t', key, '=', obj1[key], '\n\t', key, '=', val2)
     try:
-        attr1 = obj1[i]['attributes']
-        attr2 = obj2[i]['attributes']
+        attr1 = obj1['attributes']
+        attr2 = obj2['attributes']
     except KeyError:
-        continue
-    print('diff in ', MARKER[i], 'attributes:')
+        return
+    print('diff on ', marker, 'attributes:')
     for key in iter(attr1):
         if key in ['fip', 'pOutId', 'pSubOutId', 'cosys']:
             continue;
@@ -72,3 +68,9 @@ for i in range(3):
             val2 = ''
         if attr1[key] != val2:
             print('\t', key, '=', attr1[key], '\n\t', key, '=', val2)
+
+obj1 = parse2objects(id1)
+obj2 = parse2objects(id2)
+
+for i in range(3):
+    comp_dict(obj1[i], obj2[i], MARKER[i])
