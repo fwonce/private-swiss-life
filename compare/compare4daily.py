@@ -16,6 +16,7 @@ MARKER = ['BizOrder', 'PayOrder', 'LogisticsOrder']
 FILTER1 = ['gmtCreate', 'gmtModified', 'parentId', 'outOrderId', 'bizOrderId', 'subBizType', 'snapPath', 'ip']
 FILTER2 = ['gmtCreate', 'gmtModified', 'payOrderId', 'outPayId']
 FILTER3 = ['gmtCreate', 'gmtModified', 'logisticsOrderId']
+FILTER4 = ['gmtCreate', 'gmtModified', 'bizOrderId']
 
 r = re.compile('|'.join(REPLACEMENTS.keys()))
 
@@ -32,7 +33,8 @@ def json_obj(str):
     return json.loads(re.sub('([a-zA-Z]+)=', '"\\1":', jsonstr))
 
 def parse2objects(i):
-    url = 'http://trade.cacheadmin.taobao.org:9999/tccacheadmin/tpConsole.htm?op=querySingle&id=' + i
+    #url = 'http://trade.cacheadmin.taobao.org:9999/tccacheadmin/tpConsole.htm?op=querySingle&id=' + i
+    url = 'http://10.232.15.168:8080/tccacheadmin/tpConsole.htm?op=querySingle&id=' + i
     text = urllib.request.urlopen(url).read().decode('gbk')
     jsonobj1 = json_obj(sub_order_str(text, MARKER[0]))
     jsonobj2 = json_obj(sub_order_str(text, MARKER[1]))
@@ -74,3 +76,20 @@ obj2 = parse2objects(id2)
 
 for i in range(3):
     comp_dict(obj1[i], obj2[i], MARKER[i])
+
+def parse2object2(i):
+    url = 'http://tmallbuyadmin.admin.taobao.org/order/bizVerticalQuery.htm?biz_order_id=' + i
+    text = urllib.request.urlopen(url).read().decode('gbk')
+    stop = text.rindex('<hr/>')
+    text = text[text.rindex('[', 0, stop):text.rindex(']', 0, stop)+1].replace("&quot;", "\"")
+    obj = json.loads(text)
+    for el in obj:
+        for f in FILTER4: del el[f]
+    return obj
+    
+k = lambda el: el['valueType']
+battr1 = sorted(parse2object2(id1), key=k)
+battr2 = sorted(parse2object2(id2), key=k)
+
+for i in range(len(battr1)):
+    comp_dict(battr1[i], battr2[i], 'BizAttribute ' + str(i+1))
