@@ -1,11 +1,12 @@
 package fwonce.xia.misc;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import fwonce.xia.constant.Uris;
+import com.google.common.collect.Lists;
+
+import fwonce.xia.constant.Constants;
 
 /**
  * ±È¿˙MP3
@@ -14,31 +15,34 @@ import fwonce.xia.constant.Uris;
  */
 public class DirectoryNavigator implements Iterable<File> {
 
-  private File dir;
-  private List<File> fileList;
-  private Integer fileCount;
-  
-  public DirectoryNavigator() {
-    try {
-      dir = new File(Uris.absPath);
-      if (dir == null || !dir.isDirectory()) {
-        throw new IllegalArgumentException(Uris.absPath
-            + " is not a directory");
-      }
-      File[] files = dir.listFiles();
-      this.fileList = Arrays.asList(files);
-      this.fileCount = files.length;
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
+	private File dir;
+	private List<File> fileList = Lists.newArrayList();
+	private Integer fileCount;
 
-  public Integer getFileCount() {
-    return fileCount;
-  }
+	public DirectoryNavigator() {
+		try {
+			dir = new File(Constants.absPath);
+			if (dir == null || !dir.isDirectory()) {
+				throw new IllegalArgumentException(Constants.absPath + " is not a directory");
+			}
+			File[] files = dir.listFiles();
+			for (File file : files) {
+				if (!file.getName().startsWith(".")) {
+					this.fileList.add(file);
+				}
+			}
+			this.fileCount = this.fileList.size();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
-  @Override
-  public Iterator<File> iterator() {
-    return fileList.iterator();
-  }
+	public Integer getFileCount() {
+		return fileCount;
+	}
+
+	@Override
+	public Iterator<File> iterator() {
+		return fileList.iterator();
+	}
 }

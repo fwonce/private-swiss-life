@@ -9,8 +9,8 @@ import java.util.EnumSet;
  */
 public enum ResourceType {
 
-	MAIN_HTM(".htm", Uris.songUrlPrefix),
-	ALBUM_HTM(".album.htm", Uris.albumUrlPrefix), ;
+	MAIN_HTM(".htm", Constants.songUrlPrefix),
+	ALBUM_HTM(".album.htm", Constants.albumUrlPrefix), ;
 
 	private String suf;
 

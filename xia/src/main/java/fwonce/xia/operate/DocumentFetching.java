@@ -1,4 +1,4 @@
-package fwonce.xia.core;
+package fwonce.xia.operate;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -8,19 +8,19 @@ import java.io.OutputStream;
 import java.net.URL;
 
 import org.apache.commons.lang3.StringUtils;
-import org.htmlparser.Parser;
-import org.htmlparser.filters.HasAttributeFilter;
-import org.htmlparser.tags.LinkTag;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
+import fwonce.xia.constant.Constants;
 import fwonce.xia.constant.ResourceType;
 import fwonce.xia.misc.TaskQueue;
 
 /**
- * 下载html文件
+ * 下载html文件，并缓存
  * 
  * @author Floyd Wan
  */
-public class FileFetching implements Runnable {
+public class DocumentFetching implements Runnable {
 
 	private static final String MP3 = ".mp3";
 	private static TaskQueue taskPool = TaskQueue.inst;
@@ -28,14 +28,21 @@ public class FileFetching implements Runnable {
 	private String taskName;
 	private boolean ready = false;
 
-	public FileFetching(File file) {
+	public DocumentFetching(File file) {
 		if (file == null || !file.isFile() || !file.canWrite()) {
 			System.err.println("skip on file: " + file);
 			return;
 		}
 		renameToMp3(file);
-		ready = true;
-		this.taskName = file.getName().split("\\.")[0];
+		this.taskName = extractTaskTargetId(file);
+		this.ready = true;
+	}
+
+	private static String extractTaskTargetId(File file) {
+		// for Android
+		// return file.getName().split("\\.")[0];
+		// for iPhone
+		return file.getName().substring(file.getName().indexOf("_") + 1, file.getName().indexOf("mp3"));
 	}
 
 	/**
@@ -55,21 +62,15 @@ public class FileFetching implements Runnable {
 		try {
 			fetchFile(taskName, taskName, ResourceType.MAIN_HTM);
 
-			Parser parser = new Parser(taskName
-					+ ResourceType.MAIN_HTM.getSuf());
-			parser.setEncoding("UTF-8");
-			LinkTag node = (LinkTag) HtmlParsing._parseSureThing(parser,
-					new HasAttributeFilter("id", "albumCover"), taskName,
-					"albumId");
-			String albumId = StringUtils.substringAfterLast(
-					node.getAttribute("href"), "/");
+			Document doc = Jsoup.parse(new File(taskName + ResourceType.MAIN_HTM.getSuf()), Constants.xiamiEncoding);
+			String albumId = StringUtils.substringAfterLast(doc.select("#albumCover").attr("href"), "/");
 			
 			fetchFile(albumId, taskName, ResourceType.ALBUM_HTM);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private static void fetchFile(String urlPart, String taskName, ResourceType rt) throws Exception {
 		String target = taskName + rt.getSuf();
 		File output = new File(target);
@@ -78,8 +79,7 @@ public class FileFetching implements Runnable {
 			taskPool.put(taskName, rt);
 			return;
 		}
-		OutputStream os = new BufferedOutputStream(new FileOutputStream(
-				output));
+		OutputStream os = new BufferedOutputStream(new FileOutputStream(output));
 
 		byte[] bytes = new byte[BUFFER_SIZE];
 		int num;
@@ -91,7 +91,7 @@ public class FileFetching implements Runnable {
 		System.out.println("Downloaded " + output.getName());
 		is.close();
 		os.close();
-		
+
 		taskPool.put(taskName, rt);
 	}
 }

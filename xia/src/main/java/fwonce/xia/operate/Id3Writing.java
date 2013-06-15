@@ -1,20 +1,20 @@
-package fwonce.xia.core;
+package fwonce.xia.operate;
 
 import java.io.File;
+import java.io.IOException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.blinkenlights.jid3.ID3Exception;
 import org.blinkenlights.jid3.MP3File;
 import org.blinkenlights.jid3.MediaFile;
 import org.blinkenlights.jid3.io.TextEncoding;
 import org.blinkenlights.jid3.v2.ID3V2_3_0Tag;
-import org.htmlparser.Parser;
-import org.htmlparser.util.ParserException;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
-
+import fwonce.xia.constant.Constants;
 import fwonce.xia.constant.ResourceType;
-import fwonce.xia.constant.Uris;
-import fwonce.xia.misc.InfoHolder;
 import fwonce.xia.misc.TaskQueue;
 
 /**
@@ -61,50 +61,37 @@ public class Id3Writing implements Runnable {
 			sw.start();
 			try {
 				MediaFile mp3File = new MP3File(new File(
-						Uris.getMp3FileName(taskName)));
+						Constants.getMp3FileName(taskName)));
 				if (isUpdatedByXia(mp3File)) {
 					System.out.println(taskName + " already tagged.");
 				} else {
-					InfoHolder infoHolder = getInfoHolder(taskName);
-					ID3V2_3_0Tag tagInfo = new ID3V2_3_0Tag();
-					tagInfo.setTitle(infoHolder.title);
-					tagInfo.setAlbum(infoHolder.album);
-					tagInfo.setArtist(infoHolder.artist);
-					tagInfo.setYear(Integer.parseInt(infoHolder.year));
-					tagInfo.setComment(EXCL_CMT);
-					
+					ID3V2_3_0Tag tagInfo = getID3V2_3_0Tag(taskName);
 					mp3File.setID3Tag(tagInfo);
 					mp3File.sync();
 				}
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 	}
 
 	private boolean isUpdatedByXia(MediaFile mp3File) throws ID3Exception {
-		return null != mp3File.getID3V2Tag()
-				&& EXCL_CMT.equals(mp3File.getID3V2Tag().getComment());
+//		return null != mp3File.getID3V2Tag()
+//				&& EXCL_CMT.equals(mp3File.getID3V2Tag().getComment());
+		return false;
 	}
 
-	public static InfoHolder getInfoHolder(String taskName)
-			throws ParserException {
-		Parser parser = new Parser(taskName + ResourceType.MAIN_HTM.getSuf());
-		parser.setEncoding("UTF-8");
-		Parser parser2 = new Parser(taskName + ResourceType.ALBUM_HTM.getSuf());
-		parser2.setEncoding("UTF-8");
-		InfoHolder infoHolder = new InfoHolder();
+	public static ID3V2_3_0Tag getID3V2_3_0Tag(String taskName) throws NumberFormatException, ID3Exception, IOException {
+		Document mainDoc = Jsoup.parse(new File(taskName + ResourceType.MAIN_HTM.getSuf()), Constants.xiamiEncoding);
+		Document albumDoc = Jsoup.parse(new File(taskName + ResourceType.ALBUM_HTM.getSuf()), Constants.xiamiEncoding);
+		ID3V2_3_0Tag tagInfo = new ID3V2_3_0Tag();
 
-		infoHolder.title = HtmlParsing.parseTitle(parser, taskName);
-		parser.reset();
-		infoHolder.album = HtmlParsing.parseAlbum(parser, taskName);
-		parser.reset();
-		infoHolder.artist = HtmlParsing.parseArtist(parser, taskName);
-		
-		infoHolder.year = HtmlParsing.parseYear(parser2, taskName);
-
-		return infoHolder;
+		tagInfo.setTitle(mainDoc.select("#title").text().trim());
+		tagInfo.setAlbum(mainDoc.select("#albums_info a[href~=album]").text().trim());
+		tagInfo.setArtist(mainDoc.select("#albums_info a[href~=artist]").text().trim());
+		tagInfo.setYear(Integer.parseInt(StringUtils.substringBefore(
+				albumDoc.select("#album_info tbody > tr:eq(3) > td + td").text(), "Äê")));
+		tagInfo.setComment(EXCL_CMT);
+		return tagInfo;
 	}
-
 }

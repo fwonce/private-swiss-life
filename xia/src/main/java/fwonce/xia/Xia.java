@@ -7,9 +7,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 
-import fwonce.xia.core.FileFetching;
-import fwonce.xia.core.Id3Writing;
+
 import fwonce.xia.misc.DirectoryNavigator;
+import fwonce.xia.operate.DocumentFetching;
+import fwonce.xia.operate.Id3Writing;
 
 /**
  * 拖虾米网页分析歌曲信息
@@ -28,7 +29,7 @@ public class Xia {
         50000L, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<Runnable>());
     while (iterator.hasNext()) {
       File input = iterator.next();
-      threadPoolExecutor.execute(new FileFetching(input));
+      threadPoolExecutor.execute(new DocumentFetching(input));
     }
     threadPoolExecutor.shutdown();
   }
